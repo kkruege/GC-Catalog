@@ -448,7 +448,11 @@ function renderCal(){
   $('#calStar').setAttribute('aria-pressed', calMode === 'starred'); $('#calAll').setAttribute('aria-pressed', calMode === 'all');
   const list = []; DEPTS.forEach(d => d.classes.forEach(c => { if (passC(c) && (calMode === 'all' || stars.has(c.n))) list.push(c); }));
   const byKey = {}; const tba = [];
-  list.forEach(c => { if (!c.meets.length) { tba.push(c); return; } c.meets.forEach(mt => { const k = mt.day + '|' + mt.s + '|' + mt.e; (byKey[k] = byKey[k] || { day: mt.day, s: mt.s, e: mt.e, cls: [] }).cls.push(c); }); });
+  // "All classes": bucket by the GC's standard class periods so a day never splits into thin slivers.
+  // "My starred classes": exact times, so real conflicts show.
+  const PERIODS = [[0, 705, 570, 690], [705, 840, 705, 825], [840, 975, 840, 960], [975, 1110, 975, 1095], [1110, 1440, 1110, 1230]]; // [from, starts before, shown start, shown end]
+  const slotOf = mt => { if (calMode !== 'all') return { s: mt.s, e: mt.e }; const p = PERIODS.find(p => mt.s < p[1]) || PERIODS[4]; return { s: p[2], e: p[3] }; };
+  list.forEach(c => { if (!c.meets.length) { tba.push(c); return; } c.meets.forEach(mt => { const sl = slotOf(mt), k = mt.day + '|' + sl.s + '|' + sl.e; const g = (byKey[k] = byKey[k] || { day: mt.day, s: sl.s, e: sl.e, cls: [] }); if (!g.cls.includes(c)) g.cls.push(c); }); });
   calGroups = Object.values(byKey);
   const days = ['Mo','Tu','We','Th','Fr'].concat(['Sa','Su'].filter(d => calGroups.some(g => g.day === d)));
   let lo = 9 * 60, hi = 21 * 60;
@@ -481,7 +485,7 @@ function renderCal(){
       const cls = ['ev', one ? '' : 'grp', one && stars.has(c.n) && calMode === 'all' ? 'starred' : '', g.clash ? 'clash' : '', gi === calSel ? 'sel' : ''].join(' ');
       html += `<button type="button" class="${cls}" style="${style}" data-ev="${gi}" aria-label="${esc(label)}">` + (one
         ? `<span class="ec">${esc(c.c)}</span><span class="et">${esc(sameTopic(c) ? c.t : c.tp)}</span><span class="ei">${esc(c.i || 'TBA')}</span>`
-        : `<span class="et">${g.cls.length} classes</span><span class="ei">${fmt(g.s)}–${fmt(g.e)}</span><span class="ec">${esc(g.cls.slice(0, 4).map(x => x.c.split(' ')[0]).filter((v, i, a) => a.indexOf(v) === i).join(' · '))}${g.cls.length > 4 ? ' …' : ''}</span>`) + '</button>';
+        : `<span class="et">${g.cls.length} classes</span><span class="ei">${calMode === 'all' ? 'Starting ' + periodName(g.s) : fmt(g.s) + '–' + fmt(g.e)}</span><span class="ec">${esc(g.cls.slice(0, 4).map(x => x.c.split(' ')[0]).filter((v, i, a) => a.indexOf(v) === i).join(' · '))}${g.cls.length > 4 ? ' …' : ''}</span>`) + '</button>';
     });
     html += '</div>';
   });
@@ -494,12 +498,15 @@ function renderCal(){
   calCount = `${shownN} ${shownN === 1 ? 'class' : 'classes'} on the calendar`;
   if (calSel >= 0 && calGroups[calSel]) renderPanel(calGroups[calSel]); else $('#calPanel').hidden = true;
 }
+function periodName(s){ return s < 705 ? 'before 11:45 AM' : s < 840 ? '11:45 AM–1:59 PM' : s < 975 ? '2:00–4:14 PM' : s < 1110 ? '4:15–6:29 PM' : '6:30 PM or later'; }
 function renderPanel(g){
   const p = $('#calPanel'); p.hidden = false;
-  p.innerHTML = `<div class="dept-head"><h2>${DAYNAME[g.day]} · ${fmt(g.s)}–${fmt(g.e)}</h2><span class="n">${g.cls.length} ${g.cls.length === 1 ? 'class' : 'classes'}</span><span class="spacer"></span><button type="button" class="btn" data-close>Close</button></div>
-  <div class="dept-body">${g.cls.map(c => `<div class="mini">
+  const exact = c => c.meets.filter(m => m.day === g.day).map(m => `${fmt(m.s)}–${fmt(m.e)}`).join(', ');
+  const cls = [...g.cls].sort((a, b) => (a.meets.find(m => m.day === g.day)?.s || 0) - (b.meets.find(m => m.day === g.day)?.s || 0) || a.c.localeCompare(b.c));
+  p.innerHTML = `<div class="dept-head"><h2>${DAYNAME[g.day]} · ${calMode === 'all' ? 'classes starting ' + periodName(g.s) : fmt(g.s) + '–' + fmt(g.e)}</h2><span class="n">${g.cls.length} ${g.cls.length === 1 ? 'class' : 'classes'}</span><span class="spacer"></span><button type="button" class="btn" data-close>Close</button></div>
+  <div class="dept-body">${cls.map(c => `<div class="mini">
     <button class="star" type="button" aria-pressed="${stars.has(c.n)}" aria-label="Star ${esc(c.c)} ${esc(c.t)}" data-star="${esc(c.n)}">${star}</button>
-    <div class="head"><span class="code">${esc(c.c)} · ${esc(c.dept.name)}</span><span class="ttl">${esc(sameTopic(c) ? c.t : c.tp)}</span><span class="meta"><span>${esc(c.i || 'TBA')}</span><span class="pill">${esc(c.m)}</span></span></div>
+    <div class="head"><span class="code">${esc(c.c)} · ${esc(c.dept.name)}</span><span class="ttl">${esc(sameTopic(c) ? c.t : c.tp)}</span><span class="meta"><span class="t">${esc(exact(c))}</span><span>${esc(c.i || 'TBA')}</span><span class="pill">${esc(c.m)}</span></span></div>
     <button type="button" class="goto" data-goto="${esc(c.n)}">See class →</button></div>`).join('')}</div>`;
 }
 $('#calStar').addEventListener('click', () => setCalMode('starred'));
