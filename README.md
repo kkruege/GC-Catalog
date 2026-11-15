@@ -4,7 +4,7 @@ Every Spring 2027 course we could find across CUNY Graduate Center programs, gat
 
 **Live site:** https://kkruege.github.io/GC-Catalog/
 
-This is a student project for the [GC AI-Assisted Coding Class](https://www.gc.cuny.edu/digital-humanities/curriculum-and-degree-information/courses#fall-2026). It is not an official Graduate Center site. Always confirm details on CUNYfirst and with each program before you register.
+This is a student project for the [GC AI-Assisted Coding Class](https://www.gc.cuny.edu/digital-humanities/curriculum-and-degree-information/courses#fall-2026). It is not an official Graduate Center site. This site was built with AI assistance, and some information may be incorrect or out of date. AI can make mistakes, for example matching a description to the wrong class. Always confirm details on CUNYfirst and with each program before you register.
 
 ## Sources
 
