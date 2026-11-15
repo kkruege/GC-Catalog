@@ -2,7 +2,7 @@
 
 Every Spring 2027 course we could find across CUNY Graduate Center programs, gathered in one place, with full descriptions, professors, and meeting days and times. It also has a weekly calendar view and the course requirements for each GC certificate and the Psychology methods concentrations.
 
-**Live site:** https://kkruege.github.io/gc-catalog/
+**Live site:** https://kkruege.github.io/GC-Catalog/
 
 This is a student project for the [GC AI-Assisted Coding Class](https://www.gc.cuny.edu/digital-humanities/curriculum-and-degree-information/courses#fall-2026). It is not an official Graduate Center site. Always confirm details on CUNYfirst and with each program before you register.
 
